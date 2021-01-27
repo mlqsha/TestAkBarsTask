@@ -1,0 +1,13 @@
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.exe
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.deps.json
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.runtimeconfig.json
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.runtimeconfig.dev.json
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.dll
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\bin\Debug\netcoreapp3.1\YandexDiskUploader.pdb
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.csprojAssemblyReference.cache
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.AssemblyInfoInputs.cache
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.AssemblyInfo.cs
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.csproj.CoreCompileInputs.cache
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.dll
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.pdb
+C:\Users\Жора\source\repos\AkBarsTestTask\YandexDiskUploader\obj\Debug\netcoreapp3.1\YandexDiskUploader.genruntimeconfig.cache
