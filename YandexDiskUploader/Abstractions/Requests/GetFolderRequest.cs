@@ -5,23 +5,24 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Web;
 using YandexDiskUploader.Abstractions.Handlers;
+using YandexDiskUploader.Abstractions.Handlers.Factories;
+using YandexDiskUploader.Abstractions.POCO;
 
 namespace YandexDiskUploader.Abstractions.Requests
 {
     public class GetFolderRequest : IRequest
     {
-        private IEnumerable<string> _folderPath;
+        private readonly IEnumerable<string> _folderPath;
 
         public GetFolderRequest(IEnumerable<string> folderPath)
         {
             _folderPath = folderPath;
         }
 
-        public async Task<RequestStatus> DoRequestAsync(HttpClient httpClient)
+        //проверка на существование папок
+        public async Task<RequestStatus> DoRequestAsync(HttpClient httpClient, HandlersChainFactory chainFactory)
         {
             System.Text.StringBuilder sb = new System.Text.StringBuilder();
-
-            RequestStatus requestStatus = RequestStatus.OK;
 
             foreach (string pathElem in _folderPath)
             {
@@ -34,19 +35,17 @@ namespace YandexDiskUploader.Abstractions.Requests
 
                 HttpResponseMessage hrm = await httpClient.GetAsync("v1/disk/resources?path=" + HttpUtility.UrlEncode(sb.ToString())).ConfigureAwait(false);
 
-                AbstractHandler okHandler = new OKHandler();
+                IHandler chainOfHandlers = chainFactory.GetHandlersChain();
 
-                okHandler.SetNext(new ErrorHandler());
+                ErrorPOCO error = await chainOfHandlers.HandleAsync(hrm);
 
-                requestStatus = await okHandler.HandleAsync(hrm);
-
-                if (requestStatus != RequestStatus.OK)
+                if (error != null)
                 {
-                    break;
+                    return RequestStatus.Failed;
                 }
             }
 
-            return requestStatus;
+            return RequestStatus.OK;
         }
     }
 }

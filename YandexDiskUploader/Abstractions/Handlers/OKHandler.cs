@@ -3,22 +3,25 @@ using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using YandexDiskUploader.Abstractions.POCO;
 using YandexDiskUploader.Abstractions.Requests;
 
 namespace YandexDiskUploader.Abstractions.Handlers
 {
     public class OKHandler : AbstractHandler
     {
-        public override async Task<RequestStatus> HandleAsync(HttpResponseMessage httpResponse)
-        {
-            RequestStatus requestStatus = RequestStatus.OK;
+        public OKHandler(OperationType operationType, HttpClient httpClient) : base(operationType, httpClient) { }
 
-            if (httpResponse.StatusCode != System.Net.HttpStatusCode.OK)
+        public override async Task<ErrorPOCO> HandleAsync(HttpResponseMessage httpResponse)
+        {
+            //можно захендлить здесь в будущем
+            //здесь реализовать уже асинхронную операцию которая чекает файлы
+            if (this._operationType == OperationType.UploadFile)
             {
-                await base.HandleAsync(httpResponse).ConfigureAwait(false);
+
             }
 
-            return requestStatus;
+            return await base.HandleAsync(httpResponse).ConfigureAwait(false);
         }
     }
 }

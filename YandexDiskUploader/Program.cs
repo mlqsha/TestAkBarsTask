@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
+using YandexDiskUploader.Abstractions.Handlers.Factories;
 using YandexDiskUploader.Abstractions.Requests;
 
 namespace YandexDiskUploader
@@ -31,17 +33,7 @@ namespace YandexDiskUploader
                 return;
             }
 
-            string[] yandexDiskFolderPathElems = args[1].Split("/");
-
-            foreach (string pathElem in yandexDiskFolderPathElems)
-            {
-                if (String.IsNullOrEmpty(pathElem))
-                {
-                    Console.WriteLine(String.Format("Путь к папке Яндекс.Диска не может быть пустым", args[1]));
-
-                    return;
-                }
-            }
+            string[] yandexDiskFolderPathElems = args[1].Split("/").Where(x => !String.IsNullOrEmpty(x)).ToArray();
 
             _requests.Add(nameof(GetFolderRequest), new GetFolderRequest(yandexDiskFolderPathElems));
 
@@ -53,7 +45,9 @@ namespace YandexDiskUploader
                 return;
             }
 
-            _requests.Add(nameof(UploadFilesRequest), new UploadFilesRequest());
+            string pathForUpload = String.Join(null, yandexDiskFolderPathElems.Select(x => x + "/"));
+
+            _requests.Add(nameof(UploadFilesRequest), new UploadFilesRequest(files, pathForUpload));
 
             Console.WriteLine("Введите токен Яндекс.Диска");
 
@@ -68,8 +62,7 @@ namespace YandexDiskUploader
 
             IRequest request = _requests[nameof(GetFolderRequest)];
 
-            //стратегия получения папок
-            RequestStatus requestStatus = await request.DoRequestAsync(httpClient);
+            RequestStatus requestStatus = await request.DoRequestAsync(httpClient, new ErrorOkHandlerChain(Abstractions.Handlers.OperationType.GetFolder, httpClient));
 
             if (requestStatus != RequestStatus.OK)
             {
@@ -78,8 +71,7 @@ namespace YandexDiskUploader
 
             request = _requests[nameof(UploadFilesRequest)];
 
-            //статегия загрузки ресурсов
-            requestStatus = await request.DoRequestAsync(httpClient);
+            requestStatus = await request.DoRequestAsync(httpClient, new ErrorOkHandlerChain(Abstractions.Handlers.OperationType.UploadFile, httpClient));
 
             if (requestStatus != RequestStatus.OK)
             {
