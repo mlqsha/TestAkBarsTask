@@ -14,27 +14,20 @@ namespace YandexDiskUploader.Abstractions.Requests
 {
     public class CreateFolderRequest : IRequest
     {
-        private string _requestedPath;
+        public string RequestedPath { private get; set; }
+
+        public CreateFolderRequest() { }
 
         public CreateFolderRequest(string pathToBeRequested)
         {
-            this._requestedPath = pathToBeRequested;
+            this.RequestedPath = pathToBeRequested;
         }
 
-        public async Task<RequestStatus> DoRequestAsync(HttpClient httpClient, HandlersChainFactory chainFactory)
+        public async Task<RequestStatus> DoRequestAsync(HttpClient httpClient, IHandler handler)
         {
-            HttpResponseMessage hrm = await httpClient.PutAsync("v1/disk/resources" + this._requestedPath, null).ConfigureAwait(false);
+            HttpResponseMessage hrm = await httpClient.PutAsync("v1/disk/resources" + this.RequestedPath, null).ConfigureAwait(false);
 
-            IHandler chainOfHandlers = chainFactory.GetHandlersChain();
-
-            ErrorPOCO error = await chainOfHandlers.HandleAsync(hrm);
-
-            if (error != null)
-            {
-                return RequestStatus.Failed;
-            }
-
-            return RequestStatus.OK;
+            return await handler.HandleAsync(hrm, OperationType.CreateFolder);
         }
     }
 }

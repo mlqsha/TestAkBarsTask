@@ -12,21 +12,17 @@ namespace YandexDiskUploader.Abstractions.Handlers
     {
         IHandler SetNext(IHandler handler);
 
-        Task<ErrorPOCO> HandleAsync(HttpResponseMessage httpResponse);
+        Task<RequestStatus> HandleAsync(HttpResponseMessage httpResponse, OperationType operationType, params object[] parameters);
     }
 
     public abstract class AbstractHandler : IHandler
     {
-        protected OperationType _operationType;
-
         protected HttpClient _httpClient;
 
         private IHandler _nextHandler;
 
-        public AbstractHandler(OperationType operationType, HttpClient httpClient)
+        public AbstractHandler(HttpClient httpClient)
         {
-            this._operationType = operationType;
-
             this._httpClient = httpClient;
         }
 
@@ -37,23 +33,24 @@ namespace YandexDiskUploader.Abstractions.Handlers
             return handler;
         }
 
-        public virtual async Task<ErrorPOCO> HandleAsync(HttpResponseMessage httpResponse)
+        public virtual async Task<RequestStatus> HandleAsync(HttpResponseMessage httpResponse, OperationType operationType, params object[] parameters)
         {
-            ErrorPOCO errorPoco = null;
+            RequestStatus requestStatus = RequestStatus.OK;
 
             if (this._nextHandler != null)
             {
-                errorPoco = await this._nextHandler.HandleAsync(httpResponse).ConfigureAwait(false);
+                requestStatus = await this._nextHandler.HandleAsync(httpResponse, operationType, parameters).ConfigureAwait(false);
             }
 
-            return errorPoco;
+            return requestStatus;
         }
     }
 
     public enum OperationType
     {
-        GetFolder = 1,
-        UploadFile = 2,
-        CreateFolder = 3
+        GetFolder,
+        UploadPath,
+        CreateFolder,
+        UploadFile
     }
 }

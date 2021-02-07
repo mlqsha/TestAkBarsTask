@@ -6,20 +6,20 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web;
 using YandexDiskUploader.Abstractions.Handlers.Factories;
+using YandexDiskUploader.Abstractions.POCO;
 using YandexDiskUploader.Abstractions.Requests;
+using YandexDiskUploader.Abstractions.Requests.Factory;
 
 namespace YandexDiskUploader
 {
     class Program
     {
-        private static Dictionary<string, IRequest> _requests = new Dictionary<string, IRequest>();
-
         static async Task Main(string[] args)
         {
             if (args.Length != 2)
             {
-                Console.WriteLine("Неверное количество аргументов");
-                Console.WriteLine(@"Пример использования: C:\путь\до\файлов\ директория/яндекс/диска");
+                ConsoleExtensions.WriteLine("Неверное количество аргументов");
+                ConsoleExtensions.WriteLine(@"Пример использования: C:\путь\до\файлов\ директория/яндекс/диска");
 
                 return;
             }
@@ -28,30 +28,48 @@ namespace YandexDiskUploader
 
             if (!di.Exists)
             {
-                Console.WriteLine(String.Format("Выбранная директория {0} не существует", args[0]));
+                ConsoleExtensions.WriteLine(String.Format("Выбранная директория {0} не существует", args[0]));
 
                 return;
             }
-
-            string[] yandexDiskFolderPathElems = args[1].Split("/").Where(x => !String.IsNullOrEmpty(x)).ToArray();
-
-            _requests.Add(nameof(GetFolderRequest), new GetFolderRequest(yandexDiskFolderPathElems));
 
             FileInfo[] files = di.GetFiles();
 
             if (files.Length == 0)
             {
-                Console.WriteLine(String.Format("Выбранная директория {0} не содержит в себе файлов для загрузки", args[0]));
+                ConsoleExtensions.WriteLine(String.Format("Выбранная директория {0} не содержит в себе файлов для загрузки", args[0]));
+
                 return;
             }
 
-            string pathForUpload = String.Join(null, yandexDiskFolderPathElems.Select(x => x + "/"));
+            ConsoleExtensions.WriteLine("Введите токен Яндекс.Диска", true);
 
-            _requests.Add(nameof(UploadFilesRequest), new UploadFilesRequest(files, pathForUpload));
+            string token = ConsoleExtensions.ReadLine();
 
-            Console.WriteLine("Введите токен Яндекс.Диска");
+            ConsoleExtensions.WriteLine("Перезаписывать данные на Яндекс.Диске при загрузке файлов (y - да/n - нет)?", true);
 
-            string token = Console.ReadLine();
+            bool filesNeedToBeOverwritten = false;
+
+            do
+            {
+                string yesOrNo = ConsoleExtensions.ReadLine();
+
+                if (yesOrNo.Length == 1)
+                {
+                    yesOrNo = yesOrNo.ToLower();
+
+                    //английская или русская раскладка
+                    if (yesOrNo[0] == 'y' || yesOrNo[0] == 'у')
+                    {
+                        filesNeedToBeOverwritten = true;
+                    }
+
+                    break;
+                }
+
+                ConsoleExtensions.WriteLine("Введены неверные данные, дайте ответ в виде y - да/n - нет", true);
+
+            } while (true);
 
             HttpClient httpClient = new HttpClient();
 
@@ -60,24 +78,67 @@ namespace YandexDiskUploader
             httpClient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue("application/json"));
             httpClient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("OAuth", token);
 
-            IRequest request = _requests[nameof(GetFolderRequest)];
+            IRequest request = RequestFactory.GetRequest<GetFolderRequest>();
 
-            RequestStatus requestStatus = await request.DoRequestAsync(httpClient, new ErrorOkHandlerChain(Abstractions.Handlers.OperationType.GetFolder, httpClient));
+            string[] yandexDiskFolderPathElems = args[1].Split("/").Where(x => !String.IsNullOrEmpty(x)).ToArray();
+
+            ((GetFolderRequest)request).FolderPath = yandexDiskFolderPathElems;
+
+            HandlersChainFactory hcf = new ErrorOkHandlerChain(httpClient);
+
+            Abstractions.Handlers.IHandler handler = hcf.GetHandlersChain();
+
+            RequestStatus requestStatus = RequestStatus.OK;
+
+            try
+            {
+                requestStatus = await request.DoRequestAsync(httpClient, handler);
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.Message);
+            }
 
             if (requestStatus != RequestStatus.OK)
             {
                 return;
             }
 
-            request = _requests[nameof(UploadFilesRequest)];
+            string pathForUpload = String.Join(null, yandexDiskFolderPathElems.Select(x => x + "/"));
 
-            requestStatus = await request.DoRequestAsync(httpClient, new ErrorOkHandlerChain(Abstractions.Handlers.OperationType.UploadFile, httpClient));
+            IEnumerable<FileInfoPOCO> listOfFiles = files.Select((x, i) => new FileInfoPOCO(x, ConsoleExtensions.i + i));
+
+            foreach (FileInfoPOCO fileInfoPOCO in listOfFiles)
+            {
+                ConsoleExtensions.WriteLine(String.Format("{0} Статус: В очереди", fileInfoPOCO.FileInfo.Name));
+            }
+
+            request = RequestFactory.GetRequest<UploadResourcePathRequest>();
+
+            UploadResourcePathRequest publishResourceRequest = request as UploadResourcePathRequest;
+
+            publishResourceRequest.FileInfos = listOfFiles;
+
+            publishResourceRequest.FolderPath = pathForUpload;
+
+            publishResourceRequest.FileOverwriting = filesNeedToBeOverwritten;
+
+            try
+            {
+                requestStatus = await request.DoRequestAsync(httpClient, handler);
+
+            }
+            catch (Exception ex)
+            {
+                Logger.LogError(ex.Message);
+            }
 
             if (requestStatus != RequestStatus.OK)
             {
                 return;
             }
 
+            Console.Write("\n");
             Console.WriteLine("Работа загрузчика файлов завершена");
         }
     }
